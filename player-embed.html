@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+    }
+    #root {
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #9ee;
+      font: 14px system-ui;
+    }
+  </style>
+</head>
+<body>
+  <div id="root">⏳ Loading HeyGen avatar…</div>
+
+  <!-- HeyGen SDK from CDN -->
+  <script src="https://unpkg.com/@heygen/streaming-avatar"></script>
+
+  <script>
+    (async function(){
+      try {
+        const params = new URLSearchParams(window.location.search);
+        const token   = params.get("token");
+        const avatarId= params.get("avatarId");
+        const kbId    = params.get("kbId");
+
+        if (!token || !avatarId) {
+          document.getElementById("root").innerHTML =
+            "❌ Missing required params (token, avatarId)";
+          return;
+        }
+
+        const root = document.getElementById("root");
+        root.innerHTML = "<div id='player' style='width:100%;height:100%'></div>";
+
+        const player = new window.HeyGen.StreamingAvatar({
+          token,
+          avatarId,
+          knowledgeBaseId: kbId || undefined,
+          container: document.getElementById("player")
+        });
+
+        // Forward all key events back to Wix parent
+        function send(evt, data={}) {
+          parent.postMessage({ source: "heygen-embed", type: evt, payload: data }, "*");
+          console.log("[player-embed] Event:", evt, data);
+        }
+
+        player.on("connected", () => send("connected"));
+        player.on("disconnected", () => send("disconnected"));
+        player.on("speech_start", () => send("speech_start"));
+        player.on("speech_stop", () => send("speech_stop"));
+        player.on("status", (s) => send("status", s));
+        player.on("task", (t) => send("task", t));
+        player.on("error", (err) => {
+          send("error", { message: err.message || err });
+          document.getElementById("root").innerHTML = "❌ Avatar error: " + (err.message || err);
+        });
+
+      } catch (e) {
+        console.error("[player-embed] Fatal error:", e);
+        document.getElementById("root").innerHTML = "❌ Fatal error: " + e.message;
+      }
+    })();
+  </script>
+</body>
+</html>
