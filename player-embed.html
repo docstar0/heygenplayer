@@ -1,0 +1,83 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HeyGen Player Embed</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    html,body { height:100%; margin:0; background:#000; color:#fff; font:14px system-ui; }
+    #root { height:100%; display:flex; align-items:center; justify-content:center; }
+    .msg { opacity:.8; padding:8px 10px; border:1px solid #2a2a2a; border-radius:8px; }
+  </style>
+</head>
+<body>
+  <div id="root"><div class="msg">Loading avatar…</div></div>
+
+  <!-- ESM build direct from CDN (avoids Wix/AMD conflicts) -->
+  <script type="module">
+    // 👉 Replace the version if needed
+    import StreamingAvatar, { StreamingEvents } 
+      from 'https://cdn.jsdelivr.net/npm/@heygen/streaming-avatar@2.1.0/+esm';
+
+    // Helper
+    const q = new URLSearchParams(location.search);
+    const token   = q.get('token') || '';
+    const avatar  = q.get('avatarId') || '';
+    const kbId    = q.get('kbId') || '';
+    const root    = document.getElementById('root');
+
+    function send(type, payload={}) {
+      // Post messages back to Wix HTML Component parent
+      window.parent?.postMessage({ source:'heygen-embed', type, payload }, '*');
+    }
+
+    async function main() {
+      if (!token) {
+        root.innerHTML = '<div class="msg">Missing token</div>';
+        send('error', { message:'missing_token' });
+        return;
+      }
+
+      // Init player
+      let player;
+      try {
+        player = new StreamingAvatar({
+          token,
+          avatarId: avatar || undefined,
+          knowledgeBaseId: kbId || undefined,
+          container: root
+        });
+      } catch (e) {
+        root.innerHTML = '<div class="msg">SDK init error</div>';
+        send('error', { message:'sdk_init', detail: String(e) });
+        return;
+      }
+
+      // Bind all events we care about → bubble to parent
+      player.on(StreamingEvents.Connected,        () => send('connected'));
+      player.on(StreamingEvents.Disconnected,     () => send('disconnected'));
+      player.on(StreamingEvents.AvatarStart,      () => send('avatar_start'));
+      player.on(StreamingEvents.AvatarEnd,        () => send('avatar_end'));
+      player.on(StreamingEvents.SpeechStart,      () => send('speech_start'));
+      player.on(StreamingEvents.SpeechStop,       () => send('speech_stop'));
+      player.on(StreamingEvents.Error,            (e) => send('error', { message:'sdk_error', detail: String(e) }));
+
+      // Let parent know we’re ready
+      send('ready');
+
+      // (Optional) if you want a little keepalive while speaking
+      let ping;
+      player.on(StreamingEvents.SpeechStart, () => {
+        clearInterval(ping);
+        ping = setInterval(()=> send('activity', { src:'speech' }), 1000);
+      });
+      player.on(StreamingEvents.SpeechStop, () => { clearInterval(ping); });
+
+      // If you want to start immediately with a greeting or KB:
+      // await player.say({ text: 'Hello!' });
+    }
+
+    main();
+  </script>
+</body>
+</html>
