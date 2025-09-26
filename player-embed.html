@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+    }
+    #playerBox {
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+  </style>
+  <!-- Load your HeyGen UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <div id="playerBox"></div>
+
+  <script>
+    console.log("[player-embed] Booting…");
+
+    // Wait for parent messages
+    window.addEventListener("message", async (evt) => {
+      console.log("[player-embed] 📩 parent said:", evt.data);
+      const { token, avatarId, kbId } = evt.data || {};
+      if (!token || !avatarId) {
+        console.warn("[player-embed] ❌ missing token or avatarId, cannot continue.");
+        return;
+      }
+
+      console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…", { token, avatarId, kbId });
+      const player = window.HeyGenPlayer.create({
+        token,
+        avatarId,
+        knowledgeBaseId: kbId,
+        container: document.getElementById("playerBox"),
+      });
+
+      console.log("[player-embed] 🎉 player created:", player);
+
+      // Manual start button
+      const btn = document.createElement("button");
+      btn.textContent = "▶ Start Avatar";
+      btn.style.cssText = `
+        position:absolute;
+        top:10px;
+        left:10px;
+        z-index:1000;
+        padding:6px 12px;
+        background:#0a84ff;
+        color:white;
+        border:none;
+        border-radius:4px;
+        cursor:pointer;
+      `;
+      btn.onclick = async () => {
+        console.log("[player-embed] 🚀 user clicked start, starting avatar stream…");
+        try {
+          if (typeof player.createStartAvatar === "function") {
+            await player.createStartAvatar({});
+          } else if (typeof player.startAvatar === "function") {
+            await player.startAvatar();
+          }
+          console.log("[player-embed] ✅ avatar started");
+          btn.remove();
+        } catch (err) {
+          console.error("[player-embed] ❌ failed to start avatar:", err);
+        }
+      };
+      document.body.appendChild(btn);
+    });
+  </script>
+</body>
+</html>
