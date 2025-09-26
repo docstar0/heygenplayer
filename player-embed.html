@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Embed</title>
+  <style>
+    body, html { margin:0; padding:0; height:100%; }
+    #player { width:100%; height:100%; background:#000; }
+  </style>
+  <!-- Load SDK directly -->
+  <script src="https://cdn.jsdelivr.net/npm/@heygen/streaming-avatar/dist/index.min.js"></script>
+</head>
+<body>
+  <div id="player">⏳ Loading Avatar…</div>
+  <script>
+    (async () => {
+      console.log("[player-embed] booting…");
+
+      // 1. Fetch token from your Wix backend function
+      let token = null;
+      try {
+        const res = await fetch("/_functions/createSdkToken");
+        const json = await res.json();
+        token = json?.token;
+      } catch (err) {
+        console.error("[player-embed] token fetch failed:", err);
+      }
+
+      if (!token || !window.StreamingAvatar) {
+        document.getElementById("player").innerText = "❌ Player init failed";
+        return;
+      }
+
+      console.log("[player-embed] ✅ token acquired, starting player");
+
+      // 2. Init the avatar
+      const avatar = new window.StreamingAvatar({
+        token,
+        avatarId: "Dexter_Doctor_Standing2_public",   // adjust
+        knowledgeBaseId: "14b2ed85d8804bf5bef881da5a7e819e", // adjust
+        container: document.getElementById("player"),
+        width: "100%",
+        height: "100%"
+      });
+
+      avatar.on("ready", () => console.log("[player-embed] avatar ready"));
+      avatar.on("error", e => console.error("[player-embed] error", e));
+    })();
+  </script>
+</body>
+</html>
