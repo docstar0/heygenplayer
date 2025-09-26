@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: black;
+    }
+    #player-container {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="player-container"></div>
+
+  <!-- Load HeyGen UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+
+  <script>
+    console.log("[player-embed] Booting…");
+
+    // Ensure the bundle is ready
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!window.HeyGenPlayer) {
+        console.error("[player-embed] ❌ window.HeyGenPlayer missing!");
+        return;
+      }
+
+      console.log("[player-embed] ✅ script loaded, typeof HeyGenPlayer:", typeof window.HeyGenPlayer);
+
+      // Listen for messages from parent (Wix CE frame)
+      window.addEventListener("message", async (event) => {
+        const payload = event.data || {};
+        console.log("[player-embed] 📩 parent said:", payload);
+
+        if (!payload.token || !payload.avatarId) {
+          console.warn("[player-embed] ❌ Missing token or avatarId");
+          return;
+        }
+
+        try {
+          console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…");
+
+          const player = await window.HeyGenPlayer.create({
+            token: payload.token,
+            avatarId: payload.avatarId,
+            kbId: payload.kbId,
+            container: document.getElementById("player-container"),
+          });
+
+          console.log("[player-embed] 🎉 player created:", player);
+        } catch (err) {
+          console.error("[player-embed] ❌ exception during create():", err);
+        }
+      });
+    });
+  </script>
+</body>
+</html>
