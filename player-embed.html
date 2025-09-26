@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: black;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"></div>
+
+  <script>
+    console.log("[embed] booting…");
+
+    let player;
+
+    // Wait for messages from Wix page
+    window.addEventListener("message", async (event) => {
+      const { token, avatarId, kbId, action } = event.data || {};
+      console.log("[embed] got message:", event.data);
+
+      if (action === "stop" && player) {
+        player.stop();
+        window.parent.postMessage({ status: "stopped" }, "*");
+        return;
+      }
+
+      if (token && avatarId) {
+        if (window.HeyGenPlayer) {
+          console.log("[embed] ✅ HeyGenPlayer available, starting…");
+          player = new window.HeyGenPlayer({
+            el: document.getElementById("player"),
+            token,
+            avatarId,
+            kbId,
+          });
+          player.on("ready", () => {
+            console.log("[embed] avatar ready");
+            window.parent.postMessage({ status: "ready" }, "*");
+          });
+        } else {
+          console.error("[embed] ❌ HeyGenPlayer missing on window");
+        }
+      }
+    });
+  </script>
+</body>
+</html>
