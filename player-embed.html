@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    #playerBox {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="playerBox"></div>
+
+  <!-- Load HeyGen UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+
+  <script>
+    function log(...args) {
+      console.log(...args);
+    }
+
+    log("[player-embed] Booting…");
+
+    // Wait until HeyGenPlayer is available
+    function waitForPlayer() {
+      if (window.HeyGenPlayer) {
+        log("[player-embed] ✅ script loaded, checking window.HeyGenPlayer…");
+        log("typeof window.HeyGenPlayer:", typeof window.HeyGenPlayer);
+      } else {
+        setTimeout(waitForPlayer, 200);
+      }
+    }
+    waitForPlayer();
+
+    // Listen for messages from parent page
+    window.addEventListener("message", (event) => {
+      log("[player-embed] 📩 parent said:", event.data);
+
+      if (event.data.token && event.data.avatarId) {
+        try {
+          const container = document.getElementById("playerBox");
+
+          log("[player-embed] 🛠 creating player with new HeyGenPlayer…");
+          const player = new window.HeyGenPlayer({
+            token: event.data.token,
+            avatarId: event.data.avatarId,
+            kbId: event.data.kbId,
+            container,
+          });
+
+          log("[player-embed] 🎬 player object:", player);
+
+          if (player.on) {
+            player.on("ready", () => log("[player-embed] 🎉 player is ready!"));
+            player.on("error", (err) =>
+              log("[player-embed] ❌ player error:", err)
+            );
+          } else {
+            log("[player-embed] ⚠️ no .on() method found");
+          }
+
+          if (player.start) {
+            log("[player-embed] ▶️ calling player.start()…");
+            player.start();
+          } else {
+            log("[player-embed] ⚠️ no .start() method available");
+          }
+        } catch (err) {
+          log("[player-embed] ❌ exception during create:", err);
+        }
+      }
+    });
+  </script>
+</body>
+</html>
