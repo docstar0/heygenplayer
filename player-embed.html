@@ -1,0 +1,39 @@
+<script>
+console.log("[player-embed] Booting…");
+
+// Wait for parent messages
+window.addEventListener("message", async (evt) => {
+  console.log("[player-embed] 📩 parent said:", evt.data);
+  const { token, avatarId, kbId } = evt.data || {};
+  if (!token || !avatarId) return;
+
+  console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…", { token, avatarId, kbId });
+  const player = window.HeyGenPlayer.create({
+    token,
+    avatarId,
+    knowledgeBaseId: kbId,
+    container: document.getElementById("playerBox"),
+  });
+
+  console.log("[player-embed] 🎉 player created:", player);
+
+  // Add a manual start button
+  const btn = document.createElement("button");
+  btn.textContent = "▶ Start Avatar";
+  btn.style.cssText = "position:absolute;top:10px;left:10px;z-index:1000;";
+  btn.onclick = async () => {
+    console.log("[player-embed] 🚀 user clicked start, starting avatar stream…");
+    try {
+      if (typeof player.createStartAvatar === "function") {
+        await player.createStartAvatar({});
+      } else if (typeof player.startAvatar === "function") {
+        await player.startAvatar();
+      }
+      console.log("[player-embed] ✅ avatar started");
+    } catch (err) {
+      console.error("[player-embed] ❌ failed to start avatar:", err);
+    }
+  };
+  document.body.appendChild(btn);
+});
+</script>
