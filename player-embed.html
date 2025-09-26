@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body {
+      margin: 0;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+      color: #9ee;
+      font-family: sans-serif;
+    }
+    #playerBox {
+      width: 100%;
+      height: 100%;
+    }
+  </style>
+  <!-- Load HeyGen UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <div id="playerBox">⏳ Loading avatar…</div>
+
+  <script>
+    console.log("[player-embed] booting…");
+
+    // Wait for bundle to load
+    function initHeyGen(payload) {
+      if (!window.HeyGenPlayer) {
+        console.error("[player-embed] ❌ HeyGenPlayer missing from window");
+        return;
+      }
+      console.log("[player-embed] ✅ HeyGenPlayer ready", payload);
+
+      // Create avatar
+      const player = window.HeyGenPlayer.create({
+        token: payload.token,
+        avatarId: payload.avatarId,
+        knowledgeBaseId: payload.kbId,
+        container: document.getElementById("playerBox"),
+      });
+
+      // Listen for events
+      player.on("ready", () => console.log("[player-embed] 🎉 Avatar ready"));
+      player.on("error", (e) => console.error("[player-embed] ❌ Avatar error", e));
+    }
+
+    // Bridge: listen for Wix page messages
+    window.addEventListener("message", (evt) => {
+      if (!evt.data) return;
+      console.log("[player-embed] 📩 received message:", evt.data);
+
+      if (evt.data.type === "heygen-init") {
+        initHeyGen(evt.data);
+        window.parent.postMessage({ type: "heygen-ready" }, "*");
+      }
+    });
+  </script>
+</body>
+</html>
