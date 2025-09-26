@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+      background: #000;
+    }
+    #player-root {
+      width: 100%;
+      height: 100%;
+      background: #000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+  </style>
+</head>
+<body>
+  <div id="player-root">Loading avatar…</div>
+
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <script>
+    console.log("[player-embed] Booting…");
+
+    window.addEventListener("message", async (event) => {
+      console.log("[player-embed] 📩 parent said:", event.data);
+      const { token, avatarId, kbId } = event.data || {};
+      if (!token || !avatarId) {
+        console.error("[player-embed] ❌ missing token or avatarId");
+        return;
+      }
+
+      try {
+        console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…");
+
+        const container = document.getElementById("player-root");
+
+        const player = await window.HeyGenPlayer.create({
+          token,
+          avatarId,
+          kbId,
+          container,      // 👈 mount point
+          width: "100%",  // optional
+          height: "100%", // optional
+        });
+
+        console.log("[player-embed] 🎉 player created:", player);
+      } catch (err) {
+        console.error("[player-embed] ❌ error creating player:", err);
+      }
+    });
+  </script>
+</body>
+</html>
