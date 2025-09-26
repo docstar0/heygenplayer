@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Debug</title>
+  <style>
+    body { margin:0; background:#111; color:#eee; font:14px/1.5 monospace; padding:10px; }
+    pre { background:#222; padding:8px; border-radius:4px; }
+  </style>
+</head>
+<body>
+  <h3>HeyGen Player Debug</h3>
+  <div id="log"></div>
+
+  <script src="heygen-player.umd.js"></script>
+  <script>
+    function log(msg, obj) {
+      const el = document.getElementById("log");
+      el.innerHTML += `<div>${msg}</div>`;
+      if (obj) {
+        el.innerHTML += `<pre>${JSON.stringify(obj, null, 2)}</pre>`;
+      }
+      console.log("[player-embed]", msg, obj || "");
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      log("booting…");
+
+      if (!window.HeyGenPlayer) {
+        log("❌ HeyGenPlayer missing on window");
+        return;
+      }
+      log("✅ window.HeyGenPlayer is available");
+
+      const ce = window.frameElement;
+      const token = ce?.getAttribute("sdk-token");
+      const avatarId = ce?.getAttribute("avatar-id");
+      const kbId = ce?.getAttribute("kb-id");
+
+      log("Attributes received from CE:", { token, avatarId, kbId });
+
+      if (!token || !avatarId) {
+        log("❌ Missing token or avatarId → cannot continue");
+        return;
+      }
+
+      try {
+        const avatar = window.HeyGenPlayer.create({
+          token,
+          avatarId,
+          knowledgeBaseId: kbId,
+          container: document.body,
+        });
+
+        avatar.on("ready", () => log("✅ Avatar ready"));
+        avatar.on("error", (err) => log("❌ Avatar error: " + err.message));
+      } catch (e) {
+        log("❌ Exception while creating avatar: " + e.message);
+      }
+    });
+  </script>
+</body>
+</html>
