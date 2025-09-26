@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body, html {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
+    #player {
+      width: 100%;
+      height: 100%;
+      background: #000;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"></div>
+
+  <!-- Load the UMD bundle you built -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+
+  <script>
+    console.log("[player-embed] Booting…");
+
+    window.addEventListener("message", async (ev) => {
+      const data = ev.data;
+      if (!data || !data.token || !data.avatarId) {
+        console.warn("[player-embed] Ignoring message:", data);
+        return;
+      }
+
+      console.log("[player-embed] 📩 parent said:", data);
+
+      try {
+        const container = document.getElementById("player");
+
+        console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…");
+        const player = await window.HeyGenPlayer.create({
+          token: data.token,
+          avatarId: data.avatarId,
+          kbId: data.kbId,
+          container,
+        });
+
+        console.log("[player-embed] 🎉 player created:", player);
+
+        // 🔧 Start the avatar explicitly
+        console.log("[player-embed] 🚀 starting avatar stream…");
+        if (typeof player.createStartAvatar === "function") {
+          await player.createStartAvatar({});
+          console.log("[player-embed] ✅ avatar started");
+        } else if (typeof player.startAvatar === "function") {
+          await player.startAvatar();
+          console.log("[player-embed] ✅ avatar started via startAvatar()");
+        } else {
+          console.error("[player-embed] ❌ No start method available on player object", player);
+        }
+
+      } catch (err) {
+        console.error("[player-embed] ❌ error creating player:", err);
+      }
+    });
+  </script>
+</body>
+</html>
