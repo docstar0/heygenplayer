@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Debug</title>
+  <style>
+    body {
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+    }
+    #playerContainer {
+      width: 640px;
+      height: 480px;
+      background: #111;
+      margin-bottom: 10px;
+    }
+    button {
+      margin: 4px;
+      padding: 8px 16px;
+      font-size: 14px;
+    }
+  </style>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <h3>HeyGen Player Debug</h3>
+  <div id="playerContainer"></div>
+  <div>
+    <button id="startBtn" disabled>▶️ Start</button>
+    <button id="stopBtn" disabled>⏹ Stop</button>
+    <button id="muteBtn" disabled>🔇 Mute</button>
+    <button id="unmuteBtn" disabled>🔊 Unmute</button>
+  </div>
+
+  <script>
+    console.log("[player-embed] Booting…");
+
+    let player = null;
+
+    // Wait for Wix parent to send token/ids
+    window.addEventListener("message", async (ev) => {
+      if (ev.data?.token && ev.data?.avatarId) {
+        console.log("[player-embed] 📩 parent said:", ev.data);
+        try {
+          player = await window.HeyGenPlayer.create({
+            token: ev.data.token,
+            avatarId: ev.data.avatarId,
+            kbId: ev.data.kbId,
+            container: document.getElementById("playerContainer"),
+          });
+          console.log("[player-embed] 🎉 player created:", player);
+
+          // Enable buttons now
+          document.getElementById("startBtn").disabled = false;
+          document.getElementById("stopBtn").disabled = false;
+          document.getElementById("muteBtn").disabled = false;
+          document.getElementById("unmuteBtn").disabled = false;
+
+        } catch (err) {
+          console.error("[player-embed] ❌ failed to init player:", err);
+        }
+      }
+    });
+
+    // Button handlers
+    document.getElementById("startBtn").onclick = async () => {
+      try {
+        console.log("[player-embed] 🚀 starting avatar stream…");
+        await player.startAvatar();
+        console.log("[player-embed] ✅ avatar started");
+      } catch (err) {
+        console.error("[player-embed] ❌ startAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      try {
+        await player.stopAvatar();
+        console.log("[player-embed] 🛑 avatar stopped");
+      } catch (err) {
+        console.error("[player-embed] ❌ stopAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = () => {
+      try {
+        player.muteMicrophone();
+        console.log("[player-embed] 🔇 mic muted");
+      } catch (err) {
+        console.error("[player-embed] ❌ mute failed:", err);
+      }
+    };
+
+    document.getElementById("unmuteBtn").onclick = () => {
+      try {
+        player.unmuteMicrophone();
+        console.log("[player-embed] 🔊 mic unmuted");
+      } catch (err) {
+        console.error("[player-embed] ❌ unmute failed:", err);
+      }
+    };
+  </script>
+</body>
+</html>
