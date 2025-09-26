@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background: #000;
+      color: #0f0;
+      font: 14px monospace;
+    }
+    #app {
+      width: 100%;
+      height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+  </style>
+  <!-- Load your UMD build -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <div id="app">⏳ Loading avatar…</div>
+
+  <script>
+    console.log("[player-embed] booting…");
+
+    // Confirm UMD loaded
+    if (!window.HeyGenPlayer) {
+      console.error("[player-embed] ❌ window.HeyGenPlayer is missing!");
+    } else {
+      console.log("[player-embed] ✅ window.HeyGenPlayer available");
+    }
+
+    // Listen for messages from Wix page
+    window.addEventListener("message", (event) => {
+      console.log("[player-embed] 📩 got message:", event.data);
+
+      if (event.data && event.data.token && event.data.avatarId) {
+        const { token, avatarId, kbId } = event.data;
+
+        try {
+          const container = document.getElementById("app");
+          container.innerHTML = ""; // clear "Loading avatar…"
+
+          // Create and start HeyGen player
+          const player = window.HeyGenPlayer.create({
+            token,
+            avatarId,
+            kbId,
+            container,
+          });
+
+          console.log("[player-embed] 🎬 Player created:", { token, avatarId, kbId });
+
+          // Optional: start immediately
+          if (player.start) {
+            player.start();
+            console.log("[player-embed] ▶️ Player started");
+          } else {
+            console.warn("[player-embed] player.start() not found");
+          }
+
+        } catch (err) {
+          console.error("[player-embed] ❌ Failed to init player:", err);
+          document.getElementById("app").innerText = "❌ Failed to start avatar";
+        }
+      } else {
+        console.warn("[player-embed] Ignored message (missing token/avatarId)");
+      }
+    });
+  </script>
+</body>
+</html>
