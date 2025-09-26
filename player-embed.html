@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <style>
+    body { margin:0; background:#000; display:flex; align-items:center; justify-content:center; height:100vh; }
+    #player { width:100%; height:100%; background:#000; color:#9ee; display:flex; align-items:center; justify-content:center; }
+  </style>
+</head>
+<body>
+  <div id="player">⏳ Loading Avatar…</div>
+  <script src="heygen-player.umd.js"></script>
+  <script>
+    console.log("[player-embed] booting…");
+
+    window.addEventListener("DOMContentLoaded", () => {
+      if (!window.HeyGenPlayer) {
+        console.error("[player-embed] ❌ HeyGenPlayer missing on window");
+        return;
+      }
+
+      const el = document.currentScript.ownerDocument.querySelector('#player');
+
+      // Read attributes from CE <heygen-player>
+      const ce = window.frameElement;
+      const token = ce?.getAttribute("sdk-token");
+      const avatarId = ce?.getAttribute("avatar-id");
+      const kbId = ce?.getAttribute("kb-id");
+
+      if (!token || !avatarId) {
+        el.textContent = "❌ Missing token or avatar-id";
+        return;
+      }
+
+      console.log("[player-embed] ✅ starting avatar with", { token, avatarId, kbId });
+
+      const avatar = window.HeyGenPlayer.create({
+        token,
+        avatarId,
+        knowledgeBaseId: kbId,
+        container: el,
+      });
+
+      avatar.on("ready", () => {
+        console.log("[player-embed] ✅ HeyGen avatar ready");
+        el.textContent = ""; // clear loading
+      });
+
+      avatar.on("error", (err) => {
+        console.error("[player-embed] avatar error", err);
+        el.textContent = "❌ Avatar error: " + err.message;
+      });
+    });
+  </script>
+</body>
+</html>
