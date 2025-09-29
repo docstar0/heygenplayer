@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font:14px monospace; }
+    #log { padding:8px; white-space:pre-wrap; max-height:150px; overflow:auto; }
+    #playerBox { width:100%; height:400px; background:#111; }
+    #controls { padding:8px; background:#222; }
+    button { margin:4px; padding:6px 10px; font-size:14px; }
+  </style>
+</head>
+<body>
+  <div id="playerBox">⏳ Loading HeyGen player…</div>
+  <div id="controls">
+    <button id="startBtn">▶️ Start</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+  <div id="log"></div>
+
+  <!-- Load HeyGen UMD -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <script>
+    const log = (...args) => {
+      console.log("[player-embed]", ...args);
+      document.getElementById("log").textContent += args.map(a =>
+        typeof a === "object" ? JSON.stringify(a) : String(a)
+      ).join(" ") + "\n";
+    };
+
+    let player = null;
+
+    window.addEventListener("message", (evt) => {
+      const { token, sessionId, avatarId, kbId } = evt.data || {};
+      log("📩 parent said:", evt.data);
+
+      if (!token || !sessionId || !avatarId) {
+        log("❌ missing required data", evt.data);
+        return;
+      }
+
+      try {
+        player = window.HeyGenPlayer.create({
+          token,
+          session_id: sessionId,   // ✅ must include
+          avatarId,
+          kbId,
+          container: document.getElementById("playerBox"),
+        });
+        log("🎉 player created:", player);
+      } catch (e) {
+        log("❌ exception during create:", e);
+      }
+    });
+
+    // Controls
+    document.getElementById("startBtn").onclick = async () => {
+      if (!player) return log("⚠️ no player yet");
+      try {
+        log("🚀 starting avatar stream…");
+        await player.startAvatar();
+        log("✅ avatar started");
+      } catch (err) {
+        log("❌ startAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      if (!player) return log("⚠️ no player yet");
+      try {
+        await player.stopAvatar();
+        log("🛑 avatar stopped");
+      } catch (err) {
+        log("❌ stopAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = async () => {
+      if (!player) return log("⚠️ no player yet");
+      try {
+        await player.mute();
+        log("🔇 avatar muted");
+      } catch (err) {
+        log("❌ mute failed:", err);
+      }
+    };
+
+    document.getElementById("unmuteBtn").onclick = async () => {
+      if (!player) return log("⚠️ no player yet");
+      try {
+        await player.unmute();
+        log("🔊 avatar unmuted");
+      } catch (err) {
+        log("❌ unmute failed:", err);
+      }
+    };
+  </script>
+</body>
+</html>
