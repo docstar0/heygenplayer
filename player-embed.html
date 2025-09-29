@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Debug</title>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font:14px monospace; }
+    #log { white-space:pre-wrap; padding:10px; }
+    #controls { position:absolute; top:10px; left:10px; z-index:10; }
+    button { margin-right:6px; }
+    #playerContainer { width:100%; height:100vh; background:#111; }
+  </style>
+</head>
+<body>
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="muteBtn">Mute</button>
+    <button id="unmuteBtn">Unmute</button>
+  </div>
+  <div id="playerContainer"></div>
+  <div id="log"></div>
+
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <script>
+    const log = (...args) => {
+      console.log(...args);
+      const div = document.getElementById("log");
+      div.textContent += args.map(a => (typeof a === "object" ? JSON.stringify(a) : a)).join(" ") + "\n";
+    };
+
+    let player = null;
+    let token = null, sessionId = null, avatarId = null, kbId = null;
+
+    window.addEventListener("message", (event) => {
+      const data = event.data;
+      if (!data || !data.token) return;
+
+      token = data.token;
+      sessionId = data.sessionId;
+      avatarId = data.avatarId;
+      kbId = data.kbId;
+
+      log("📩 parent said:", data);
+
+      if (window.HeyGenPlayer && !player) {
+        log("🛠 creating player with HeyGenPlayer.create…");
+        player = window.HeyGenPlayer.create({
+          token,
+          session_id: sessionId,
+          avatarName: avatarId,
+          container: document.getElementById("playerContainer"),
+        });
+        log("🎉 player created:", player);
+      }
+    });
+
+    document.getElementById("startBtn").onclick = async () => {
+      if (!player) return log("⚠️ no player yet, wait for parent message.");
+      try {
+        log("🚀 starting avatar stream…", { token, sessionId, avatarId, kbId });
+        await player.startAvatar({
+          token,
+          session_id: sessionId,
+          avatarName: avatarId,
+        });
+        log("✅ avatar started");
+      } catch (err) {
+        log("❌ startAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      if (player) {
+        try {
+          await player.stopAvatar();
+          log("🛑 avatar stopped");
+        } catch (err) {
+          log("❌ stopAvatar failed:", err);
+        }
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = () => {
+      try {
+        player?.muteMicrophone?.();
+        log("🔇 mic muted");
+      } catch (err) {
+        log("❌ mute failed:", err);
+      }
+    };
+
+    document.getElementById("unmuteBtn").onclick = () => {
+      try {
+        player?.unmuteMicrophone?.();
+        log("🎤 mic unmuted");
+      } catch (err) {
+        log("❌ unmute failed:", err);
+      }
+    };
+
+    log("Booting…");
+  </script>
+</body>
+</html>
