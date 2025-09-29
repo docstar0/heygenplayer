@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HeyGen Player Embed</title>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font-family:monospace; }
+    #log { font-size:12px; padding:4px; }
+    heygen-player { width:100%; height:100%; display:block; }
+  </style>
+</head>
+<body>
+  <div id="log">[player-embed] Booting…</div>
+  <heygen-player id="hgPlayer"></heygen-player>
+
+  <script>
+    function log(...args) {
+      console.log(...args);
+      const div = document.getElementById("log");
+      div.innerText += "\n" + args.map(a => (typeof a === "object" ? JSON.stringify(a) : a)).join(" ");
+    }
+
+    window.addEventListener("message", (evt) => {
+      log("📩 parent said:", evt.data);
+      const { token, avatarId, kbId } = evt.data || {};
+      if (!token || !avatarId) {
+        log("❌ missing token or avatarId");
+        return;
+      }
+
+      const player = document.getElementById("hgPlayer");
+      player.setAttribute("sdk-token", token);
+      player.setAttribute("avatar-id", avatarId);
+      if (kbId) player.setAttribute("kb-id", kbId);
+
+      log("✅ attributes set on <heygen-player>");
+    });
+  </script>
+</body>
+</html>
