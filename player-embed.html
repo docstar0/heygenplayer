@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>HeyGen Streaming Avatar</title>
+    <style>
+      body {
+        margin: 0;
+        background: black;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+      }
+      #playerBox {
+        width: 640px;
+        height: 480px;
+        background: #000;
+      }
+      button {
+        margin-top: 10px;
+        padding: 8px 16px;
+      }
+    </style>
+    <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  </head>
+  <body>
+    <div id="playerBox"></div>
+    <button id="startBtn">Start Avatar</button>
+    <button id="sayBtn">Say Hello</button>
+
+    <script>
+      console.log("[player-embed] Booting…");
+      let player;
+
+      window.addEventListener("message", async (event) => {
+        if (!event.data || !event.data.token) return;
+        console.log("📩 parent said:", event.data);
+
+        const { token, avatarId } = event.data;
+
+        try {
+          console.log("🛠 creating player with HeyGenPlayer.create…");
+          player = await window.HeyGenPlayer.create({
+            token,
+            avatarId,
+            container: document.getElementById("playerBox"),
+          });
+
+          console.log("🎉 player created:", player);
+
+          document.getElementById("startBtn").onclick = async () => {
+            console.log("🚀 starting avatar stream…");
+            try {
+              await player.startAvatar({
+                avatarName: avatarId,
+                knowledgeId: event.data.kbId,
+              });
+              console.log("✅ avatar started");
+            } catch (err) {
+              console.error("❌ startAvatar failed:", err);
+            }
+          };
+
+          document.getElementById("sayBtn").onclick = async () => {
+            console.log("🗣 sending text to avatar…");
+            try {
+              await player.sendText("Hello, world! The player is working.");
+              console.log("✅ text sent");
+            } catch (err) {
+              console.error("❌ sendText failed:", err);
+            }
+          };
+        } catch (err) {
+          console.error("❌ failed to init:", err);
+        }
+      });
+    </script>
+  </body>
+</html>
