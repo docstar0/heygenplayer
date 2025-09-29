@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font:14px monospace; }
+    #log { padding:8px; white-space:pre-wrap; }
+    #controls { padding:8px; }
+    button { margin-right:8px; padding:6px 10px; }
+    #video { width:100%; max-height:70vh; background:#111; display:block; }
+  </style>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <div id="log">[player-embed] Booting…</div>
+  <video id="video" playsinline autoplay muted></video>
+  <div id="controls">
+    <button id="startBtn">▶️ Start</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+
+  <script>
+    const logEl = document.getElementById('log');
+    const log = (msg, obj) => {
+      const line = typeof obj !== 'undefined' ? msg + ' ' + JSON.stringify(obj) : msg;
+      console.log(line); logEl.textContent += '\n' + line;
+    };
+
+    let player = null;
+    let last = null;
+
+    // 1) Receive config from Wix
+    window.addEventListener('message', (ev) => {
+      const d = ev.data || {};
+      log('📩 parent said:', d);
+
+      if (!d.token) { log('❌ no token in message'); return; }
+
+      last = {
+        token: d.token,
+        avatarId: d.avatarId,
+        kbId: d.kbId,
+        // provide both casings to satisfy different SDKs
+        avatar_id: d.avatarId,
+        knowledge_id: d.kbId,
+        basePath: 'https://api.heygen.com',
+      };
+
+      if (!window.HeyGenPlayer) { log('❌ HeyGenPlayer not on window'); return; }
+
+      log('🛠 creating player with HeyGenPlayer.create…');
+      try {
+        player = window.HeyGenPlayer.create(last);
+        log('🎉 player created:', player);
+      } catch (e) {
+        log('❌ create failed:', e);
+      }
+    });
+
+    // 2) Controls
+    document.getElementById('startBtn').onclick = async () => {
+      if (!player || !last) return log('⚠️ no player yet, wait for parent message.');
+
+      try {
+        // ensure user gesture unlocks audio
+        try { (window.AudioContext && new AudioContext()).resume(); } catch (e) {}
+
+        // Pass both camel & snake options – harmless if unused
+        const opts = {
+          token: last.token,
+          basePath: last.basePath,
+          avatarId: last.avatarId,
+          avatar_id: last.avatar_id,
+          kbId: last.kbId,
+          knowledge_id: last.knowledge_id
+        };
+
+        log('🚀 starting avatar stream…', { …opts, token: '***' });
+        await player.startAvatar(opts);
+        log('✅ avatar started');
+
+        // If SDK exposes a mediaStream, attach it to <video> so we can see something
+        if (player.mediaStream instanceof MediaStream) {
+          const v = document.getElementById('video');
+          if (v.srcObject !== player.mediaStream) v.srcObject = player.mediaStream;
+          try { await v.play(); } catch {}
+        } else {
+          log('ℹ️ no mediaStream on player (SDK may render internally)');
+        }
+      } catch (e) {
+        log('❌ startAvatar failed:', e);
+      }
+    };
+
+    document.getElementById('stopBtn').onclick = async () => {
+      if (!player) return;
+      try { await player.stopAvatar(); log('⏹ avatar stopped'); } catch (e) { log('❌ stop failed:', e); }
+    };
+
+    document.getElementById('muteBtn').onclick = async () => {
+      if (!player) return;
+      try { await player.muteMicrophone(); log('🔇 mic muted'); } catch (e) { log('❌ mute failed:', e); }
+    };
+
+    document.getElementById('unmuteBtn').onclick = async () => {
+      if (!player) return;
+      try { await player.unmuteMicrophone(); log('🔊 mic unmuted'); } catch (e) { log('❌ unmute failed:', e); }
+    };
+  </script>
+</body>
+</html>
