@@ -1,0 +1,44 @@
+<body style="margin:0; background:#000; color:#0f0; font-family:system-ui;">
+  <div id="status">⏳ Waiting for parent message…</div>
+  <div id="controls"></div>
+
+  <script>
+    const statusEl = document.getElementById("status");
+    const controlsEl = document.getElementById("controls");
+
+    window.addEventListener("message", async (event) => {
+      const { token, avatarId } = event.data || {};
+      console.log("[player-embed] 📩 parent said:", event.data);
+
+      if (!token || !avatarId) {
+        statusEl.textContent = "❌ Missing token or avatarId";
+        return;
+      }
+
+      try {
+        statusEl.textContent = "🛠 Creating player…";
+        const player = await HeyGenPlayer.create({ token });
+        statusEl.textContent = "✅ Player ready";
+
+        const btn = document.createElement("button");
+        btn.textContent = "▶️ Start Avatar";
+        btn.style.padding = "10px";
+        btn.onclick = async () => {
+          try {
+            statusEl.textContent = "🚀 Starting avatar…";
+            await player.startAvatar({ token, avatarName: avatarId });
+            statusEl.textContent = "✅ Avatar started";
+          } catch (err) {
+            console.error("[player-embed] ❌ startAvatar failed:", err);
+            statusEl.textContent = "❌ " + err.message;
+          }
+        };
+        controlsEl.appendChild(btn);
+
+      } catch (err) {
+        console.error("[player-embed] ❌ failed to init player:", err);
+        statusEl.textContent = "❌ Init failed: " + err.message;
+      }
+    });
+  </script>
+</body>
