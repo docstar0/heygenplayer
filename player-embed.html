@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <style>
+    body { margin: 0; background: black; }
+    #playerContainer { width: 100%; height: 100%; position: relative; }
+    #controls { position: absolute; bottom: 10px; left: 10px; z-index: 10; }
+  </style>
+</head>
+<body>
+  <div id="playerContainer"></div>
+  <div id="controls">
+    <button id="startBtn">▶ Start</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+
+  <script>
+    console.log("[player-embed] Booting…");
+
+    let player;
+    window.addEventListener("message", async (event) => {
+      const { token, sessionId, avatarId } = event.data || {};
+      console.log("📩 parent said:", event.data);
+
+      if (!token || !sessionId || !avatarId) {
+        console.error("❌ missing required data", event.data);
+        return;
+      }
+
+      console.log("🛠 creating player with HeyGenPlayer.create…");
+      player = await HeyGenPlayer.create({
+        token,
+        sessionId,
+        avatarName: avatarId,
+        container: document.getElementById("playerContainer"),
+      });
+
+      console.log("🎉 player created:", player);
+
+      // Wire up controls
+      document.getElementById("startBtn").onclick = async () => {
+        try {
+          console.log("🚀 starting avatar stream…", { token, sessionId, avatarId });
+          await player.startAvatar({ token, sessionId, avatarName: avatarId });
+          console.log("✅ avatar started");
+        } catch (err) {
+          console.error("❌ startAvatar failed:", err);
+        }
+      };
+
+      document.getElementById("stopBtn").onclick = async () => {
+        try {
+          await player.stopAvatar();
+          console.log("🛑 avatar stopped");
+        } catch (err) {
+          console.error("❌ stopAvatar failed:", err);
+        }
+      };
+
+      document.getElementById("muteBtn").onclick = () => player.muteMicrophone?.();
+      document.getElementById("unmuteBtn").onclick = () => player.unmuteMicrophone?.();
+    });
+  </script>
+</body>
+</html>
