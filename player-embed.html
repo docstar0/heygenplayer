@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Debug</title>
+  <style>
+    body { background:#000; color:#9ee; font-family:sans-serif; }
+    #player { width:100%; height:480px; background:#111; margin-bottom:10px; }
+    #controls button {
+      margin:4px;
+      padding:6px 12px;
+      font-size:14px;
+      border-radius:6px;
+      cursor:pointer;
+    }
+    #status {
+      margin-top:8px;
+      padding:6px;
+      background:#222;
+      border-radius:4px;
+      font-size:14px;
+    }
+    .ok { color:#4ade80; }  /* green */
+    .warn { color:#facc15; } /* yellow */
+    .err { color:#f87171; }  /* red */
+  </style>
+</head>
+<body>
+  <div id="player">⏳ Loading HeyGen player…</div>
+
+  <div id="controls">
+    <button id="startBtn">▶️ Start</button>
+    <button id="stopBtn">⏹️ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+
+  <div id="status">Status: <span id="statusText" class="warn">Idle</span></div>
+
+  <!-- HeyGen UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+
+  <script>
+    let player = null;
+    const statusText = document.getElementById("statusText");
+
+    function setStatus(msg, cls="ok") {
+      statusText.textContent = msg;
+      statusText.className = cls;
+      console.log("[player-embed] status →", msg);
+    }
+
+    // 1. Wait for Wix → iframe message with token + avatarId
+    window.addEventListener("message", async (event) => {
+      console.log("[player-embed] 📩 parent said:", event.data);
+
+      const { token, avatarId } = event.data || {};
+      if (!token || !avatarId) {
+        setStatus("Missing token or avatarId", "err");
+        return;
+      }
+
+      try {
+        player = await window.HeyGenPlayer.create({
+          token,
+          avatarId,
+          container: document.getElementById("player"),
+        });
+        console.log("[player-embed] 🎉 player created:", player);
+        setStatus("Player ready", "ok");
+      } catch (err) {
+        console.error("[player-embed] ❌ failed to init player:", err);
+        setStatus("Init failed", "err");
+      }
+    });
+
+    // 2. Control handlers
+    document.getElementById("startBtn").addEventListener("click", async () => {
+      if (player) {
+        try {
+          await player.startAvatar();
+          setStatus("Avatar streaming", "ok");
+        } catch (err) {
+          console.error("[player-embed] ❌ startAvatar failed:", err);
+          setStatus("Start failed", "err");
+        }
+      }
+    });
+
+    document.getElementById("stopBtn").addEventListener("click", async () => {
+      if (player) {
+        try {
+          await player.stopAvatar();
+          setStatus("Avatar stopped", "warn");
+        } catch (err) {
+          console.error("[player-embed] ❌ stopAvatar failed:", err);
+          setStatus("Stop failed", "err");
+        }
+      }
+    });
+
+    document.getElementById("muteBtn").addEventListener("click", async () => {
+      if (player) {
+        try {
+          await player.muteMic();
+          setStatus("Mic muted", "warn");
+        } catch (err) {
+          console.error("[player-embed] ❌ muteMic failed:", err);
+          setStatus("Mute failed", "err");
+        }
+      }
+    });
+
+    document.getElementById("unmuteBtn").addEventListener("click", async () => {
+      if (player) {
+        try {
+          await player.unmuteMic();
+          setStatus("Mic unmuted", "ok");
+        } catch (err) {
+          console.error("[player-embed] ❌ unmuteMic failed:", err);
+          setStatus("Unmute failed", "err");
+        }
+      }
+    });
+  </script>
+</body>
+</html>
