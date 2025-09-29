@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Debug</title>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font:14px monospace; }
+    #log { padding:10px; white-space:pre-wrap; }
+    #controls { position:fixed; bottom:10px; left:10px; }
+    button { margin-right:5px; padding:6px 12px; }
+    video { display:block; width:100%; height:auto; background:#111; }
+  </style>
+</head>
+<body>
+  <div id="log">[player-embed] Booting…</div>
+  <video id="video" autoplay playsinline muted></video>
+  <div id="controls">
+    <button id="startBtn">Start</button>
+    <button id="stopBtn">Stop</button>
+    <button id="muteBtn">Mute</button>
+    <button id="unmuteBtn">Unmute</button>
+  </div>
+
+  <!-- Load your UMD bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <script>
+    const logEl = document.getElementById('log');
+    function log(...args) {
+      console.log('[player-embed]', ...args);
+      logEl.textContent += "\n" + args.map(a=>JSON.stringify(a)).join(" ");
+    }
+
+    let player = null;
+    let last = null;
+
+    // Listen for parent messages (from Wix page)
+    window.addEventListener("message", (evt) => {
+      log("📩 parent said:", evt.data);
+      last = evt.data;
+      if (window.HeyGenPlayer) {
+        log("🛠 creating player with HeyGenPlayer.create…");
+        player = window.HeyGenPlayer.create({ videoElement: document.getElementById("video") });
+        log("🎉 player created:", player);
+      }
+    });
+
+    // Controls
+    document.getElementById("startBtn").onclick = async () => {
+      if (!player || !last) return log("⚠️ no player yet, wait for parent message.");
+      try {
+        log("🚀 starting avatar stream…", last);
+        await player.startAvatar({
+          token: last.token,
+          avatarId: last.avatarId,
+          kbId: last.kbId,
+          basePath: "https://api.heygen.com"
+        });
+        log("✅ avatar started");
+      } catch (e) {
+        log("❌ startAvatar failed:", e);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      try {
+        await player.stopAvatar();
+        log("🛑 avatar stopped");
+      } catch (e) { log("❌ stop failed:", e); }
+    };
+
+    document.getElementById("muteBtn").onclick = () => {
+      try { player.muteMicrophone(); log("🔇 mic muted"); }
+      catch (e) { log("❌ mute failed:", e); }
+    };
+
+    document.getElementById("unmuteBtn").onclick = () => {
+      try { player.unmuteMicrophone(); log("🎤 mic unmuted"); }
+      catch (e) { log("❌ unmute failed:", e); }
+    };
+
+    log("✅ script loaded, typeof HeyGenPlayer:", typeof window.HeyGenPlayer);
+  </script>
+</body>
+</html>
