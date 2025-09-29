@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player Embed</title>
+  <style>
+    body { margin:0; background:#000; color:#0f0; font:14px monospace; }
+    #log { padding:8px; white-space:pre-wrap; }
+    #controls { padding:8px; }
+    button { margin:4px; padding:6px 10px; }
+  </style>
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+</head>
+<body>
+  <div id="log">[player-embed] Booting…</div>
+  <div id="controls">
+    <button id="startBtn">▶️ Start</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+  <script>
+    const log = (msg, obj) => {
+      const line = typeof obj !== "undefined" ? msg + " " + JSON.stringify(obj) : msg;
+      console.log(line);
+      document.getElementById("log").innerText += "\n" + line;
+    };
+
+    let player = null;
+    let lastData = null;
+
+    // Listen for parent (Wix page) messages
+    window.addEventListener("message", (ev) => {
+      if (!ev.data) return;
+      log("📩 parent said:", ev.data);
+
+      const { token, sessionId, avatarId, kbId } = ev.data;
+      if (!token || !sessionId) {
+        log("❌ missing required data", ev.data);
+        return;
+      }
+
+      lastData = { token, sessionId, avatarId, kbId };
+
+      if (window.HeyGenPlayer) {
+        log("🛠 creating player with HeyGenPlayer.create…");
+        player = window.HeyGenPlayer.create(lastData);
+        log("🎉 player created:", player);
+      } else {
+        log("❌ HeyGenPlayer not available on window");
+      }
+    });
+
+    // Controls
+    document.getElementById("startBtn").onclick = async () => {
+      if (!player || !lastData) return log("⚠️ no player yet, wait for parent message.");
+      try {
+        log("🚀 starting avatar stream…", lastData);
+        await player.startAvatar(lastData);
+        log("✅ avatar started");
+      } catch (e) {
+        log("❌ startAvatar failed:", e);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      if (!player) return;
+      try {
+        await player.stopAvatar();
+        log("⏹ avatar stopped");
+      } catch (e) {
+        log("❌ stop failed:", e);
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = async () => {
+      if (!player) return;
+      try {
+        await player.muteMicrophone();
+        log("🔇 mic muted");
+      } catch (e) {
+        log("❌ mute failed:", e);
+      }
+    };
+
+    document.getElementById("unmuteBtn").onclick = async () => {
+      if (!player) return;
+      try {
+        await player.unmuteMicrophone();
+        log("🔊 mic unmuted");
+      } catch (e) {
+        log("❌ unmute failed:", e);
+      }
+    };
+  </script>
+</body>
+</html>
