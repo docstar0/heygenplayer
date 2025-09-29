@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>HeyGen v2 Player</title>
+  <!-- v2 bundle (LiveKit v2 inside) -->
+  <script src="https://unpkg.com/@heygen/streaming-avatar/dist/heygen-player.bundle.js"></script>
+  <style>
+    html, body { height:100%; margin:0; background:#0b0f14; color:#cfe1ff; font:14px/1.4 system-ui, sans-serif; }
+    #wrap { height:100%; display:flex; flex-direction:column; }
+    #player { flex:1; min-height:260px; display:flex; align-items:center; justify-content:center; }
+    .controls { padding:10px; display:flex; gap:8px; flex-wrap:wrap; border-top:1px solid #223; background:#0f1520; }
+    button { padding:8px 12px; border-radius:8px; border:1px solid #345; background:#152032; color:#cfe1ff; cursor:pointer; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    .log { padding:8px 12px; font-family:ui-monospace, SFMono-Regular, Menlo, monospace; font-size:12px; color:#9fb7ff; }
+  </style>
+</head>
+<body>
+  <div id="wrap">
+    <div id="player"></div>
+
+    <div class="controls">
+      <button id="startBtn">▶ Start</button>
+      <button id="stopBtn" disabled>⏹ Stop</button>
+      <button id="muteBtn" disabled>🔇 Mute</button>
+      <button id="unmuteBtn" disabled>🔊 Unmute</button>
+      <span class="log" id="status">Loading…</span>
+    </div>
+  </div>
+
+  <script>
+    let player = null;
+    let initData = null;
+
+    const $ = (id) => document.getElementById(id);
+    const log = (m, ...rest) => { console.log('[player-embed]', m, ...rest); $('#status').textContent = m; };
+
+    window.addEventListener('message', async (evt) => {
+      const d = evt?.data || {};
+      console.log('📩 parent said:', d);
+
+      const { sessionId, token, url, avatarId } = d || {};
+      if (!sessionId || !token || !url || !avatarId) {
+        log('❌ missing required data');
+        return;
+      }
+      initData = { sessionId, token, url, avatarId };
+
+      try {
+        log('🛠 creating v2 player…');
+        player = await HeyGenPlayer.create({
+          container: $('#player'),
+          basePath: url,       // from /v1/streaming.new
+          token: token,        // access token
+          sessionId: sessionId,
+          avatarId: avatarId,
+        });
+        log('🎉 v2 player created');
+        $('#startBtn').disabled = false;
+        $('#muteBtn').disabled = false;
+        $('#unmuteBtn').disabled = false;
+      } catch (e) {
+        console.error(e);
+        log('❌ failed to create player');
+      }
+    });
+
+    $('#startBtn').onclick = async () => {
+      if (!player || !initData) { log('⚠️ no player yet, wait for parent'); return; }
+      try {
+        log('🚀 starting avatar…', initData);
+        await player.startAvatar({
+          sessionId: initData.sessionId,
+          avatarId: initData.avatarId,
+        });
+        log('✅ avatar started');
+        $('#stopBtn').disabled = false;
+      } catch (e) {
+        console.error(e);
+        log('❌ startAvatar failed');
+      }
+    };
+
+    $('#stopBtn').onclick = async () => {
+      if (!player) return;
+      try {
+        await player.stopAvatar();
+        log('⏹ stopped');
+        $('#stopBtn').disabled = true;
+      } catch (e) {
+        console.error(e);
+        log('❌ stop failed');
+      }
+    };
+
+    $('#muteBtn').onclick = () => { try { player?.mute(); log('🔇 muted'); } catch(e){ console.error(e); } };
+    $('#unmuteBtn').onclick = () => { try { player?.unmute(); log('🔊 unmuted'); } catch(e){ console.error(e); } };
+    log('Booting…');
+  </script>
+</body>
+</html>
