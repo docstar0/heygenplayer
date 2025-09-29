@@ -1,0 +1,36 @@
+<script>
+window.addEventListener("message", async (event) => {
+  const { token, avatarId } = event.data || {};
+  console.log("[player-embed] 📩 parent said:", event.data);
+
+  if (!token || !avatarId) {
+    console.error("[player-embed] ❌ missing required data", event.data);
+    return;
+  }
+
+  try {
+    console.log("[player-embed] 🛠 creating player with HeyGenPlayer.create…");
+
+    const player = await HeyGenPlayer.create({ token });
+    console.log("[player-embed] 🎉 player created:", player);
+
+    // Add a button so browser allows audio/video
+    const btn = document.createElement("button");
+    btn.textContent = "▶️ Start Avatar";
+    btn.style.padding = "10px";
+    btn.onclick = async () => {
+      try {
+        console.log("[player-embed] 🚀 starting avatar stream…", { avatarId });
+        await player.startAvatar({ token, avatarName: avatarId });
+        console.log("[player-embed] ✅ avatar started");
+      } catch (err) {
+        console.error("[player-embed] ❌ startAvatar failed:", err);
+      }
+    };
+    document.body.appendChild(btn);
+
+  } catch (err) {
+    console.error("[player-embed] ❌ failed to init player:", err);
+  }
+});
+</script>
