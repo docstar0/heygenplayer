@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>HeyGen Player Embed</title>
+  <style>
+    body {
+      margin: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      background: #000;
+      color: #0f0;
+      font-family: monospace;
+    }
+    #log {
+      font-size: 12px;
+      padding: 6px;
+      background: #111;
+      overflow-y: auto;
+      max-height: 120px;
+    }
+    #controls {
+      padding: 6px;
+      background: #222;
+      display: flex;
+      gap: 8px;
+    }
+    #player {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #000;
+    }
+    video {
+      max-width: 100%;
+      max-height: 100%;
+    }
+  </style>
+</head>
+<body>
+  <div id="player"><div>⏳ Loading avatar…</div></div>
+  <div id="controls">
+    <button id="startBtn">▶️ Start</button>
+    <button id="stopBtn">⏹ Stop</button>
+    <button id="muteBtn">🔇 Mute</button>
+    <button id="unmuteBtn">🔊 Unmute</button>
+  </div>
+  <pre id="log"></pre>
+
+  <!-- Load HeyGen bundle -->
+  <script src="https://docstar0.github.io/heygenplayer/heygen-player.umd.js"></script>
+  <script>
+    const logEl = document.getElementById("log");
+    const playerBox = document.getElementById("player");
+    let player;
+
+    function log(...args) {
+      console.log("[player-embed]", ...args);
+      logEl.textContent += args.map(a => (typeof a === "object" ? JSON.stringify(a) : a)).join(" ") + "\n";
+      logEl.scrollTop = logEl.scrollHeight;
+    }
+
+    log("Booting…");
+
+    window.addEventListener("message", async (ev) => {
+      const { token, sessionId, avatarId, kbId } = ev.data || {};
+      if (!token || !sessionId || !avatarId) {
+        return log("❌ missing required data", ev.data);
+      }
+      log("📩 parent said:", ev.data);
+
+      try {
+        log("🛠 creating player with HeyGenPlayer.create…");
+        player = await window.HeyGenPlayer.create({
+          token,
+          sessionId,
+          avatarId,
+          knowledgeBaseId: kbId,
+          container: playerBox,
+        });
+        log("🎉 player created:", player);
+      } catch (err) {
+        log("❌ failed to create player:", err);
+      }
+    });
+
+    // Controls
+    document.getElementById("startBtn").onclick = async () => {
+      if (player) {
+        try {
+          log("🚀 starting avatar stream…");
+          await player.startAvatar();
+          log("✅ avatar started");
+        } catch (err) {
+          log("❌ startAvatar failed:", err);
+        }
+      } else {
+        log("⚠️ no player yet, wait for parent message.");
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      if (player) {
+        try {
+          await player.stopAvatar();
+          log("⏹ avatar stopped");
+        } catch (err) {
+          log("❌ stopAvatar failed:", err);
+        }
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = async () => {
+      if (player?.mute) {
+        await player.mute();
+        log("🔇 mic muted");
+      }
+    };
+
+    document.getElementById("unmuteBtn").onclick = async () => {
+      if (player?.unmute) {
+        await player.unmute();
+        log("🔊 mic unmuted");
+      }
+    };
+  </script>
+</body>
+</html>
