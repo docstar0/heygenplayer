@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>HeyGen Player v2 Embed</title>
+  <style>
+    body { margin:0; background:#000; display:flex; align-items:center; justify-content:center; height:100vh; }
+    #playerContainer { width: 100%; height: 100%; position:relative; }
+    video { width:100%; height:100%; background:#000; }
+    #controls {
+      position:absolute; bottom:10px; left:50%; transform:translateX(-50%);
+      display:flex; gap:10px;
+    }
+    button {
+      background:#111; color:#fff; border:1px solid #444;
+      border-radius:6px; padding:6px 12px; cursor:pointer;
+    }
+  </style>
+  <script src="https://docstar0.github.io/heygen-player-cdn/heygen-sdk-player.bundle.js"></script>
+</head>
+<body>
+  <div id="playerContainer">
+    <video id="videoEl" autoplay playsinline></video>
+    <div id="controls">
+      <button id="startBtn">Start</button>
+      <button id="stopBtn">Stop</button>
+      <button id="muteBtn">Mute</button>
+      <button id="unmuteBtn">Unmute</button>
+    </div>
+  </div>
+
+  <script>
+    console.log("[player-embed] Booting…");
+    let player = null;
+    let streamActive = false;
+
+    // Listen for Wix parent
+    window.addEventListener("message", async (evt) => {
+      const data = evt.data;
+      console.log("📩 parent said:", data);
+
+      if (!data?.token || !data?.sessionId || !data?.url) {
+        console.error("[player-embed] ❌ missing token/session/url", data);
+        return;
+      }
+
+      // Create player
+      try {
+        console.log("🛠 creating player with HeyGenPlayer.create…");
+        player = await window.HeyGenPlayer.create({
+          token: data.token,
+          sessionId: data.sessionId,
+          basePath: data.url,
+          avatarId: data.avatarId,
+          kbId: data.kbId,
+          videoElement: document.getElementById("videoEl"),
+        });
+        console.log("🎉 player created:", player);
+      } catch (err) {
+        console.error("[player-embed] ❌ player creation failed", err);
+      }
+    });
+
+    // Controls
+    document.getElementById("startBtn").onclick = async () => {
+      if (!player) return console.warn("[player-embed] ⚠️ no player yet");
+      try {
+        console.log("[player-embed] 🚀 starting avatar stream…");
+        await player.startAvatar();
+        streamActive = true;
+      } catch (err) {
+        console.error("[player-embed] ❌ startAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("stopBtn").onclick = async () => {
+      if (!player || !streamActive) return;
+      try {
+        await player.stopAvatar();
+        streamActive = false;
+        console.log("[player-embed] ⏹ stopped avatar");
+      } catch (err) {
+        console.error("[player-embed] ❌ stopAvatar failed:", err);
+      }
+    };
+
+    document.getElementById("muteBtn").onclick = () => {
+      if (player?.mute) {
+        player.mute();
+        console.log("[player-embed] 🔇 muted");
+      }
+    };
+    document.getElementById("unmuteBtn").onclick = () => {
+      if (player?.unmute) {
+        player.unmute();
+        console.log("[player-embed] 🔊 unmuted");
+      }
+    };
+  </script>
+</body>
+</html>
